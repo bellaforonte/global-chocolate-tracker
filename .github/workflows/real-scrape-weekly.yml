@@ -2,8 +2,8 @@ name: Real Scraping - Weekly
 
 on:
   schedule:
-    - cron: '0 12 * * 1'  # Pazartesi 12:00 UTC
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -11,8 +11,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -21,143 +19,16 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install requests beautifulsoup4 lxml --break-system-packages
+        pip install requests beautifulsoup4 --break-system-packages
     
-    - name: Scrape real data
+    - name: Scrape products
       run: |
-        python3 << 'PYTHON'
-import json
-import requests
-from datetime import datetime
-from bs4 import BeautifulSoup
-import random
-
-products = []
-product_id = 1
-
-print("🔍 REAL SCRAPING BAŞLADI...")
-
-# AMAZON SCRAPING
-print("\n📍 Amazon'dan çekiliyor (15+ ürün)...")
-try:
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        python3 scraper.py
     
-    # Multiple Amazon searches
-    searches = ['chocolate praline', 'chocolate bonbon', 'chocolate couverture']
-    
-    for search_term in searches:
-        try:
-            url = f"https://www.amazon.com/s?k={search_term}"
-            response = requests.get(url, headers=headers, timeout=10)
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Extract product names
-            items = soup.find_all('h2', limit=6)
-            
-            for item in items:
-                title = item.get_text(strip=True)
-                if title and len(title) > 5:
-                    products.append({
-                        "id": product_id,
-                        "name": title[:100],
-                        "brand": "Amazon",
-                        "category": ["Pralin", "Bonbon", "Couverture"][random.randint(0,2)],
-                        "country": "USA",
-                        "price": round(random.uniform(8, 30), 2),
-                        "currency": "$",
-                        "features": "Amazon Prime",
-                        "added_date": datetime.now().isoformat() + "Z",
-                        "source": "Amazon Live Scrape"
-                    })
-                    product_id += 1
-        except Exception as e:
-            print(f"  Search '{search_term}' error: {e}")
-except Exception as e:
-    print(f"Amazon error: {e}")
-
-# ALIBABA SCRAPING
-print("📍 Alibaba'dan çekiliyor (15+ ürün)...")
-try:
-    for i in range(15):
-        products.append({
-            "id": product_id,
-            "name": f"Alibaba Chocolate Product #{i+1}",
-            "brand": "Alibaba Supplier",
-            "category": ["Couverture", "Pralin", "Draje"][i % 3],
-            "country": "China",
-            "price": round(random.uniform(5, 20), 2),
-            "currency": "$",
-            "features": "Bulk Supply",
-            "added_date": datetime.now().isoformat() + "Z",
-            "source": "Alibaba Live Scrape"
-        })
-        product_id += 1
-except Exception as e:
-    print(f"Alibaba error: {e}")
-
-# INDUSTRY NEWS SCRAPING
-print("📍 Industry News'ten çekiliyor (10+ haber)...")
-try:
-    news_sources = [
-        ("https://www.confectionerynews.com/", "ConfectioneryNews"),
-        ("https://www.candyindustry.com/", "CandyIndustry"),
-    ]
-    
-    for url, source_name in news_sources:
-        try:
-            response = requests.get(url, timeout=10, headers=headers)
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Extract headlines
-            headlines = soup.find_all(['h2', 'h3'], limit=5)
-            
-            for headline in headlines:
-                text = headline.get_text(strip=True)
-                if text and len(text) > 10:
-                    products.append({
-                        "id": product_id,
-                        "name": text[:100],
-                        "brand": source_name,
-                        "category": "Industry News",
-                        "country": "Global",
-                        "price": 0,
-                        "currency": "$",
-                        "features": "Breaking News",
-                        "added_date": datetime.now().isoformat() + "Z",
-                        "source": f"{source_name} Live Scrape"
-                    })
-                    product_id += 1
-        except:
-            pass
-except Exception as e:
-    print(f"News error: {e}")
-
-# REMOVE DUPLICATES
-seen = set()
-unique_products = []
-for p in products:
-    key = (p['name'], p['brand'])
-    if key not in seen:
-        seen.add(key)
-        unique_products.append(p)
-
-# SAVE
-with open('docs/products.json', 'w', encoding='utf-8') as f:
-    json.dump(unique_products, f, indent=2, ensure_ascii=False)
-
-print(f"\n✅ {len(unique_products)} GERÇEK ürün scrape edildi!")
-print(f"📊 Kaynaklar: Amazon, Alibaba, ConfectioneryNews, CandyIndustry")
-PYTHON
-    
-    - name: Commit and push
+    - name: Commit changes
       run: |
         git config --local user.email "action@github.com"
-        git config --local user.name "Auto Scraper Bot"
-        
-        if git diff --quiet docs/products.json; then
-          echo "✅ No changes"
-        else
-          git add docs/products.json
-          git commit -m "🤖 Auto: Real scraping - $(date '+%Y-%m-%d %H:%M:%S')"
-          git push
-        fi
+        git config --local user.name "Bot"
+        git add docs/products.json
+        git commit -m "🤖 Auto scrape: $(date)" || echo "No changes"
+        git push
