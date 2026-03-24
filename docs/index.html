@@ -13,21 +13,21 @@
     button { padding: 12px 24px; background: #8B7355; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin: 5px; }
     button:hover { background: #6d5a42; }
     button:disabled { background: #ccc; cursor: not-allowed; }
-    .message { padding: 10px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; font-weight: bold; }
+    .message { padding: 15px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; font-weight: bold; font-size: 16px; }
     .message.show { display: block; }
-    .success { background: #d4edda; color: #155724; }
-    .loading { background: #fff3cd; color: #856404; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
     .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-    .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
+    .stat-value { font-size: 32px; font-weight: bold; color: #8B7355; }
     .stat-label { color: #999; font-size: 13px; margin-top: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f5f5f5; font-weight: bold; }
     tr:nth-child(even) { background: #fafafa; }
     input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; width: 100%; font-size: 14px; }
-    .badge { background: #E8D5C4; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-    .source-tag { background: #D4E9F7; color: #0066CC; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+    .badge { background: #E8D5C4; color: #333; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .source-tag { background: #D4E9F7; color: #0066CC; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
     <h1>🌍 Global Çikolata Tracker</h1>
     
     <div class="container">
-      <button onclick="updateNow()" id="update-btn">🔄 ŞİMDİ GÜNCELLE</button>
+      <button onclick="loadData()" id="update-btn">🔄 ŞİMDİ GÜNCELLE</button>
       <button onclick="location.reload()">🔁 Yenile</button>
       <div id="message" class="message"></div>
       <input type="text" id="search" placeholder="Ürün adı, marka, kaynak ara..." onkeyup="filterTable()">
@@ -90,49 +90,33 @@
   <script>
     let products = [];
     
-    // Netlify Function URL (local development)
-    const API_URL = '/.netlify/functions/scrape-now';
-    
-    async function updateNow() {
+    async function loadData() {
       const btn = document.getElementById('update-btn');
       const msg = document.getElementById('message');
       
       btn.disabled = true;
       msg.className = 'message show loading';
-      msg.textContent = '⏳ Tüm kaynaklardan veri çekiliyor... (Amazon, Alibaba, News)';
+      msg.textContent = '⏳ Veri yükleniyor...';
       
       try {
-        const response = await fetch(API_URL);
+        const response = await fetch('./products.json?t=' + Date.now());
         const data = await response.json();
         
-        if (data.success) {
-          products = data.products;
+        if (Array.isArray(data)) {
+          products = data;
           renderTable(products);
           updateStats();
           msg.className = 'message show success';
-          msg.textContent = `✅ ${data.count} ürün bulundu! Kaynaklar: ${data.sources.join(', ')}`;
+          const sources = [...new Set(data.map(p => p.source))].join(', ');
+          msg.textContent = `✅ ${data.length} ürün yüklendi! Kaynaklar: ${sources}`;
         }
       } catch (e) {
         msg.className = 'message show success';
-        msg.textContent = `⚠️ API'ye bağlanırken sorun oluştu. Demo veri gösteriliyor...`;
-        // Show fallback
-        products = getFallbackProducts();
-        renderTable(products);
-        updateStats();
+        msg.textContent = `⚠️ JSON yüklenirken sorun: ${e.message}`;
       }
       
       btn.disabled = false;
       setTimeout(() => { msg.className = 'message' }, 5000);
-    }
-    
-    function getFallbackProducts() {
-      return [
-        {id:1,name:"Lindt Lindor Dark",brand:"Lindt",category:"Bonbon",country:"Switzerland",price:8.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
-        {id:2,name:"Godiva Pralines",brand:"Godiva",category:"Pralin",country:"Belgium",price:22.50,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
-        {id:3,name:"Barry Callebaut Couverture",brand:"Barry",category:"Couverture",country:"Belgium",price:11.50,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
-        {id:4,name:"Pelit Premium",brand:"Pelit",category:"Pralin",country:"Turkey",price:12.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
-        {id:5,name:"Ferrero Rocher",brand:"Ferrero",category:"Pralin",country:"Italy",price:6.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()}
-      ];
     }
     
     function renderTable(arr) {
@@ -172,13 +156,13 @@
       
       const sel = document.getElementById('category');
       sel.innerHTML = '<option value="">📦 Tüm Kategoriler</option>' + 
-        cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        cats.sort().map(c => `<option value="${c}">${c}</option>`).join('');
     }
     
-    // Load on startup
-    products = getFallbackProducts();
-    renderTable(products);
-    updateStats();
+    // Otomatik yükle
+    window.addEventListener('load', () => {
+      loadData();
+    });
   </script>
 </body>
 </html>
