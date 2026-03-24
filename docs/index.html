@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌍 Global Chocolate Tracker</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.0/Recharts.min.js"></script>
+  <title>🌍 Global Çikolata Tracker</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #faf8f5; }
@@ -15,22 +12,28 @@
     .container { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     button { padding: 12px 24px; background: #8B7355; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
     button:hover { background: #6d5a42; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f5f5f5; font-weight: bold; }
     tr:nth-child(even) { background: #fafafa; }
-    input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; width: 100%; }
+    input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; width: 100%; font-size: 14px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
     .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
     .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
     .stat-label { color: #999; font-size: 13px; margin-top: 5px; }
+    .category-badge { background: #E8D5C4; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+    .price { font-weight: bold; color: #8B7355; }
+    .empty { text-align: center; padding: 40px; color: #999; }
+    .loading { text-align: center; padding: 20px; color: #666; }
   </style>
 </head>
 <body>
   <div id="root">
     <h1>🌍 Global Çikolata Tracker</h1>
+    
     <div class="container">
-      <button onclick="updateData()">🔄 Verileri Güncelle</button>
+      <button onclick="location.reload()">🔄 Sayfayı Yenile</button>
       <input type="text" id="search" placeholder="Ürün adı, marka ara..." onkeyup="filterTable()">
       <select id="category" onchange="filterTable()">
         <option value="">📦 Tüm Kategoriler</option>
@@ -75,7 +78,7 @@
           </tr>
         </thead>
         <tbody id="products-body">
-          <tr><td colspan="7" style="text-align: center; padding: 40px;">⏳ Yükleniyor...</td></tr>
+          <tr><td colspan="7" class="loading">⏳ Yükleniyor...</td></tr>
         </tbody>
       </table>
     </div>
@@ -86,29 +89,32 @@
     
     async function loadProducts() {
       try {
-        const res = await fetch('/products.json');
+        const res = await fetch('./products.json');
+        if (!res.ok) throw new Error('Failed to load products');
         allProducts = await res.json();
         renderProducts(allProducts);
         updateStats();
       } catch (e) {
-        console.error('Error loading products:', e);
+        console.error('Error:', e);
+        document.getElementById('products-body').innerHTML = 
+          '<tr><td colspan="7" class="empty">❌ Veri yüklenemedi. Sayfayı yenile.</td></tr>';
       }
     }
     
     function renderProducts(products) {
       const tbody = document.getElementById('products-body');
       if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Ürün bulunamadı</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">Sonuç bulunamadı</td></tr>';
         return;
       }
       
       tbody.innerHTML = products.map(p => `
         <tr>
-          <td>${p.name || '-'}</td>
+          <td><strong>${p.name || '-'}</strong></td>
           <td>${p.brand || '-'}</td>
-          <td><span style="background: #E8D5C4; padding: 4px 8px; border-radius: 4px;">${p.category || '-'}</span></td>
+          <td><span class="category-badge">${p.category || '-'}</span></td>
           <td>${p.country || '-'}</td>
-          <td style="font-weight: bold; color: #8B7355;">${p.price ? p.currency + p.price.toFixed(2) : '-'}</td>
+          <td class="price">${p.price ? p.currency + p.price.toFixed(2) : '-'}</td>
           <td style="font-size: 12px; color: #666;">${p.features || '-'}</td>
           <td style="font-size: 12px; color: #999;">${p.added_date ? new Date(p.added_date).toLocaleDateString('tr-TR') : '-'}</td>
         </tr>
@@ -122,7 +128,9 @@
       const category = document.getElementById('category').value;
       
       const filtered = allProducts.filter(p => {
-        const matchSearch = !search || p.name?.toLowerCase().includes(search) || p.brand?.toLowerCase().includes(search);
+        const matchSearch = !search || 
+          p.name?.toLowerCase().includes(search) || 
+          p.brand?.toLowerCase().includes(search);
         const matchCategory = !category || p.category === category;
         return matchSearch && matchCategory;
       });
@@ -140,13 +148,10 @@
       
       const categorySelect = document.getElementById('category');
       categorySelect.innerHTML = '<option value="">📦 Tüm Kategoriler</option>' + 
-        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        categories.sort().map(c => `<option value="${c}">${c}</option>`).join('');
     }
     
-    async function updateData() {
-      alert('✅ Güncelleme başlatıldı! (Demo mode - veritabanı güncellemesi backend tarafında)');
-    }
-    
+    // Load on startup
     loadProducts();
   </script>
 </body>
