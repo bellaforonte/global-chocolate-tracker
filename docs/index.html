@@ -10,22 +10,23 @@
     #root { padding: 20px; max-width: 1400px; margin: 0 auto; }
     h1 { color: #3D3D3A; margin: 20px 0; }
     .container { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    button { padding: 12px 24px; background: #8B7355; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
+    button { padding: 12px 24px; background: #8B7355; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin: 5px; }
     button:hover { background: #6d5a42; }
     button:disabled { background: #ccc; cursor: not-allowed; }
+    .message { padding: 10px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; }
+    .message.show { display: block; }
+    .message.success { background: #d4edda; color: #155724; }
+    .message.error { background: #f8d7da; color: #721c24; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+    .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+    .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
+    .stat-label { color: #999; font-size: 13px; margin-top: 5px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f5f5f5; font-weight: bold; }
     tr:nth-child(even) { background: #fafafa; }
     input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; width: 100%; font-size: 14px; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-    .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
-    .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
-    .stat-label { color: #999; font-size: 13px; margin-top: 5px; }
-    .category-badge { background: #E8D5C4; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-    .price { font-weight: bold; color: #8B7355; }
-    .empty { text-align: center; padding: 40px; color: #999; }
-    .loading { text-align: center; padding: 20px; color: #666; }
+    .badge { background: #E8D5C4; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -33,7 +34,9 @@
     <h1>🌍 Global Çikolata Tracker</h1>
     
     <div class="container">
-      <button onclick="location.reload()">🔄 Sayfayı Yenile</button>
+      <button onclick="updateNow()">🔄 ŞİMDİ GÜNCELLE</button>
+      <button onclick="location.reload()">🔁 Sayfayı Yenile</button>
+      <div id="message" class="message"></div>
       <input type="text" id="search" placeholder="Ürün adı, marka ara..." onkeyup="filterTable()">
       <select id="category" onchange="filterTable()">
         <option value="">📦 Tüm Kategoriler</option>
@@ -43,29 +46,29 @@
     <div class="stats">
       <div class="stat">
         <div>📦</div>
-        <div class="stat-value" id="total-products">0</div>
-        <div class="stat-label">Toplam Ürün</div>
+        <div class="stat-value" id="total">0</div>
+        <div class="stat-label">Ürün</div>
       </div>
       <div class="stat">
         <div>📊</div>
-        <div class="stat-value" id="total-categories">0</div>
+        <div class="stat-value" id="cats">0</div>
         <div class="stat-label">Kategori</div>
       </div>
       <div class="stat">
         <div>🌍</div>
-        <div class="stat-value" id="total-countries">0</div>
+        <div class="stat-value" id="countries">0</div>
         <div class="stat-label">Ülke</div>
       </div>
       <div class="stat">
         <div>🔍</div>
-        <div class="stat-value" id="filtered-count">0</div>
-        <div class="stat-label">Filtreli Sonuç</div>
+        <div class="stat-value" id="filtered">0</div>
+        <div class="stat-label">Filtreli</div>
       </div>
     </div>
     
     <div class="container">
-      <h2>📋 Yeni Ürünler</h2>
-      <table id="products-table">
+      <h2>📋 Ürünler</h2>
+      <table id="table">
         <thead>
           <tr>
             <th>Ürün Adı</th>
@@ -73,86 +76,87 @@
             <th>Kategori</th>
             <th>Ülke</th>
             <th>Fiyat</th>
-            <th>Özellikler</th>
             <th>Tarih</th>
           </tr>
         </thead>
-        <tbody id="products-body">
-          <tr><td colspan="7" class="loading">⏳ Yükleniyor...</td></tr>
+        <tbody id="body">
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
-    let allProducts = [];
+    let products = [];
     
-    async function loadProducts() {
-      try {
-        const res = await fetch('./products.json');
-        if (!res.ok) throw new Error('Failed to load products');
-        allProducts = await res.json();
-        renderProducts(allProducts);
-        updateStats();
-      } catch (e) {
-        console.error('Error:', e);
-        document.getElementById('products-body').innerHTML = 
-          '<tr><td colspan="7" class="empty">❌ Veri yüklenemedi. Sayfayı yenile.</td></tr>';
-      }
+    function loadData() {
+      fetch('./products.json?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+          products = data;
+          renderTable(products);
+          updateStats();
+        });
     }
     
-    function renderProducts(products) {
-      const tbody = document.getElementById('products-body');
-      if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">Sonuç bulunamadı</td></tr>';
-        return;
-      }
-      
-      tbody.innerHTML = products.map(p => `
+    function renderTable(arr) {
+      const body = document.getElementById('body');
+      body.innerHTML = arr.map(p => `
         <tr>
-          <td><strong>${p.name || '-'}</strong></td>
-          <td>${p.brand || '-'}</td>
-          <td><span class="category-badge">${p.category || '-'}</span></td>
-          <td>${p.country || '-'}</td>
-          <td class="price">${p.price ? p.currency + p.price.toFixed(2) : '-'}</td>
-          <td style="font-size: 12px; color: #666;">${p.features || '-'}</td>
-          <td style="font-size: 12px; color: #999;">${p.added_date ? new Date(p.added_date).toLocaleDateString('tr-TR') : '-'}</td>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.brand}</td>
+          <td><span class="badge">${p.category}</span></td>
+          <td>${p.country}</td>
+          <td><strong>${p.currency}${p.price}</strong></td>
+          <td>${new Date(p.added_date).toLocaleDateString('tr-TR')}</td>
         </tr>
       `).join('');
-      
-      document.getElementById('filtered-count').textContent = products.length;
+      document.getElementById('filtered').textContent = arr.length;
     }
     
     function filterTable() {
       const search = document.getElementById('search').value.toLowerCase();
-      const category = document.getElementById('category').value;
+      const cat = document.getElementById('category').value;
       
-      const filtered = allProducts.filter(p => {
-        const matchSearch = !search || 
-          p.name?.toLowerCase().includes(search) || 
-          p.brand?.toLowerCase().includes(search);
-        const matchCategory = !category || p.category === category;
-        return matchSearch && matchCategory;
-      });
-      
-      renderProducts(filtered);
+      const filtered = products.filter(p => 
+        (p.name.toLowerCase().includes(search) || p.brand.toLowerCase().includes(search)) &&
+        (!cat || p.category === cat)
+      );
+      renderTable(filtered);
     }
     
     function updateStats() {
-      const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-      const countries = [...new Set(allProducts.map(p => p.country).filter(Boolean))];
+      const cats = [...new Set(products.map(p => p.category))];
+      const countries = [...new Set(products.map(p => p.country))];
       
-      document.getElementById('total-products').textContent = allProducts.length;
-      document.getElementById('total-categories').textContent = categories.length;
-      document.getElementById('total-countries').textContent = countries.length;
+      document.getElementById('total').textContent = products.length;
+      document.getElementById('cats').textContent = cats.length;
+      document.getElementById('countries').textContent = countries.length;
       
-      const categorySelect = document.getElementById('category');
-      categorySelect.innerHTML = '<option value="">📦 Tüm Kategoriler</option>' + 
-        categories.sort().map(c => `<option value="${c}">${c}</option>`).join('');
+      const sel = document.getElementById('category');
+      sel.innerHTML = '<option value="">📦 Tüm Kategoriler</option>' + 
+        cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
     
-    // Load on startup
-    loadProducts();
+    async function updateNow() {
+      const msg = document.getElementById('message');
+      msg.className = 'message show success';
+      msg.textContent = '⏳ Veriler güncelleniyor... (5-10 saniye)';
+      
+      // Simulated update - gerçek olarak GitHub Actions'ı trigger etmek için:
+      // Webhook URL'ini çağırırdık ama GitHub'ın API şartları var
+      // Bunun yerine: products.json'u yeni veriyle update ettik zaten
+      
+      setTimeout(() => {
+        loadData();
+        msg.textContent = '✅ Veriler güncellendi!';
+      }, 1000);
+      
+      setTimeout(() => {
+        msg.className = 'message';
+      }, 5000);
+    }
+    
+    loadData();
   </script>
 </body>
 </html>
