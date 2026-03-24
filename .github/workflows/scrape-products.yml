@@ -2,10 +2,8 @@ name: Scrape Chocolate Products
 
 on:
   schedule:
-    # Haftada 1 - Pazartesi saat 12:00 UTC
-    - cron: '0 12 * * 1'
+    - cron: '0 12 * * 1'  # Pazartesi 12:00 UTC
   
-  # Manual trigger (test için)
   workflow_dispatch:
 
 jobs:
@@ -24,7 +22,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install requests beautifulsoup4 lxml
+        pip install requests beautifulsoup4 lxml feedparser
     
     - name: Run scraper
       run: |
@@ -36,9 +34,9 @@ jobs:
         git config --local user.name "GitHub Action"
         
         if git diff --quiet; then
-          echo "No changes to commit"
+          echo "✅ No changes"
         else
           git add docs/products.json
-          git commit -m "🤖 Auto: Update products from scraping ($(date))"
+          git commit -m "🤖 Auto: Chocolate products updated ($(date))"
           git push
         fi
