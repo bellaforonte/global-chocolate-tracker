@@ -1,17 +1,9 @@
 [build]
-  command = "echo 'Static site'"
-  publish = "public"
-  functions = "functions"
-
-[functions]
-  node_bundler = "esbuild"
-
-# Scheduled function - her hafta Pazartesi 12:00 UTC'de çalışsın
-[[scheduled_functions]]
-  function = "scrape"
-  cron = "0 12 * * 1"
+  command = "echo 'Static site with functions'"
+  publish = "docs"
+  functions = "netlify/functions"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/*"
+  to = "/index.html"
   status = 200

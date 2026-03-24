@@ -15,9 +15,8 @@
     button:disabled { background: #ccc; cursor: not-allowed; }
     .message { padding: 10px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; font-weight: bold; }
     .message.show { display: block; }
-    .message.success { background: #d4edda; color: #155724; }
-    .message.loading { background: #fff3cd; color: #856404; }
-    .message.error { background: #f8d7da; color: #721c24; }
+    .success { background: #d4edda; color: #155724; }
+    .loading { background: #fff3cd; color: #856404; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
     .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
     .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
@@ -28,7 +27,7 @@
     tr:nth-child(even) { background: #fafafa; }
     input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; width: 100%; font-size: 14px; }
     .badge { background: #E8D5C4; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-    .source-tag { background: #D4E9F7; color: #0066CC; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px; }
+    .source-tag { background: #D4E9F7; color: #0066CC; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -37,7 +36,7 @@
     
     <div class="container">
       <button onclick="updateNow()" id="update-btn">🔄 ŞİMDİ GÜNCELLE</button>
-      <button onclick="location.reload()">🔁 Sayfayı Yenile</button>
+      <button onclick="location.reload()">🔁 Yenile</button>
       <div id="message" class="message"></div>
       <input type="text" id="search" placeholder="Ürün adı, marka, kaynak ara..." onkeyup="filterTable()">
       <select id="category" onchange="filterTable()">
@@ -91,38 +90,53 @@
   <script>
     let products = [];
     
+    // Netlify Function URL (local development)
+    const API_URL = '/.netlify/functions/scrape-now';
+    
     async function updateNow() {
-      const btn = document.getElementById('update-btn')
-      const msg = document.getElementById('message')
+      const btn = document.getElementById('update-btn');
+      const msg = document.getElementById('message');
       
-      btn.disabled = true
-      msg.className = 'message show loading'
-      msg.textContent = '⏳ Tüm kaynaklardan veri çekiliyor... (Amazon, Alibaba, News, vb)'
+      btn.disabled = true;
+      msg.className = 'message show loading';
+      msg.textContent = '⏳ Tüm kaynaklardan veri çekiliyor... (Amazon, Alibaba, News)';
       
       try {
-        // Fetch fresh data
-        const response = await fetch('./products.json?t=' + Date.now())
-        const data = await response.json()
+        const response = await fetch(API_URL);
+        const data = await response.json();
         
-        if (Array.isArray(data)) {
-          products = data
-          renderTable(products)
-          updateStats()
-          msg.className = 'message show success'
-          const sources = [...new Set(data.map(p => p.source))].join(', ')
-          msg.textContent = `✅ ${data.length} ürün bulundu! Kaynaklar: ${sources}`
+        if (data.success) {
+          products = data.products;
+          renderTable(products);
+          updateStats();
+          msg.className = 'message show success';
+          msg.textContent = `✅ ${data.count} ürün bulundu! Kaynaklar: ${data.sources.join(', ')}`;
         }
       } catch (e) {
-        msg.className = 'message show error'
-        msg.textContent = `❌ Hata: ${e.message}`
+        msg.className = 'message show success';
+        msg.textContent = `⚠️ API'ye bağlanırken sorun oluştu. Demo veri gösteriliyor...`;
+        // Show fallback
+        products = getFallbackProducts();
+        renderTable(products);
+        updateStats();
       }
       
-      btn.disabled = false
-      setTimeout(() => { msg.className = 'message' }, 5000)
+      btn.disabled = false;
+      setTimeout(() => { msg.className = 'message' }, 5000);
+    }
+    
+    function getFallbackProducts() {
+      return [
+        {id:1,name:"Lindt Lindor Dark",brand:"Lindt",category:"Bonbon",country:"Switzerland",price:8.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
+        {id:2,name:"Godiva Pralines",brand:"Godiva",category:"Pralin",country:"Belgium",price:22.50,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
+        {id:3,name:"Barry Callebaut Couverture",brand:"Barry",category:"Couverture",country:"Belgium",price:11.50,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
+        {id:4,name:"Pelit Premium",brand:"Pelit",category:"Pralin",country:"Turkey",price:12.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()},
+        {id:5,name:"Ferrero Rocher",brand:"Ferrero",category:"Pralin",country:"Italy",price:6.99,currency:"$",source:"Fallback",added_date:new Date().toISOString()}
+      ];
     }
     
     function renderTable(arr) {
-      const body = document.getElementById('body')
+      const body = document.getElementById('body');
       body.innerHTML = arr.map(p => `
         <tr>
           <td><strong>${p.name}</strong></td>
@@ -133,46 +147,38 @@
           <td><span class="source-tag">${p.source}</span></td>
           <td>${new Date(p.added_date).toLocaleDateString('tr-TR')}</td>
         </tr>
-      `).join('')
-      document.getElementById('filtered').textContent = arr.length
+      `).join('');
+      document.getElementById('filtered').textContent = arr.length;
     }
     
     function filterTable() {
-      const search = document.getElementById('search').value.toLowerCase()
-      const cat = document.getElementById('category').value
+      const search = document.getElementById('search').value.toLowerCase();
+      const cat = document.getElementById('category').value;
       
       const filtered = products.filter(p => 
-        (p.name.toLowerCase().includes(search) || 
-         p.brand.toLowerCase().includes(search) ||
-         p.source.toLowerCase().includes(search)) &&
+        (p.name.toLowerCase().includes(search) || p.brand.toLowerCase().includes(search) || p.source.toLowerCase().includes(search)) &&
         (!cat || p.category === cat)
-      )
-      renderTable(filtered)
+      );
+      renderTable(filtered);
     }
     
     function updateStats() {
-      const cats = [...new Set(products.map(p => p.category))]
-      const sources = [...new Set(products.map(p => p.source))]
+      const cats = [...new Set(products.map(p => p.category))];
+      const sources = [...new Set(products.map(p => p.source))];
       
-      document.getElementById('total').textContent = products.length
-      document.getElementById('cats').textContent = cats.length
-      document.getElementById('sources').textContent = sources.length
+      document.getElementById('total').textContent = products.length;
+      document.getElementById('cats').textContent = cats.length;
+      document.getElementById('sources').textContent = sources.length;
       
-      const sel = document.getElementById('category')
+      const sel = document.getElementById('category');
       sel.innerHTML = '<option value="">📦 Tüm Kategoriler</option>' + 
-        cats.map(c => `<option value="${c}">${c}</option>`).join('')
+        cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
     
     // Load on startup
-    window.addEventListener('load', () => {
-      fetch('./products.json')
-        .then(r => r.json())
-        .then(data => {
-          products = data
-          renderTable(products)
-          updateStats()
-        })
-    })
+    products = getFallbackProducts();
+    renderTable(products);
+    updateStats();
   </script>
 </body>
 </html>
