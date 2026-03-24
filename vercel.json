@@ -1,0 +1,49 @@
+{
+  "buildCommand": "npm run build && python scraper.py",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "nodeVersion": "18.x",
+  "env": {
+    "DB_PATH": "/tmp/chocolate_tracker.db"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "memory": 1024
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/scrape",
+      "schedule": "0 12 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/dashboard",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}
