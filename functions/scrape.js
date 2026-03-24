@@ -1,11 +1,61 @@
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
+
+// Real scraping function
+async function scrapeAmazon() {
+  return new Promise((resolve) => {
+    // Demo: Amazon'dan proxy API kullanarak veri çek
+    const options = {
+      hostname: 'api.rainforest.ai',
+      path: '/request?api_key=demo&type=search&amazon_domain=amazon.com&search_term=chocolate%20praline',
+      method: 'GET'
+    };
+
+    https.get(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          resolve(result.search_results || []);
+        } catch (e) {
+          resolve([]);
+        }
+      });
+    }).on('error', () => resolve([]));
+  });
+}
+
+async function scrapeAlibaba() {
+  // Demo products (gerçek scraping için API gerekli)
+  return [
+    {
+      name: "Professional Chocolate Couverture 70%",
+      brand: "Barry Callebaut",
+      category: "Couverture",
+      country: "Belgium",
+      price: 12.50,
+      currency: "$",
+      source: "Alibaba"
+    },
+    {
+      name: "Chocolate Chips Industrial Grade",
+      brand: "Generic",
+      category: "Çikolata Pulu",
+      country: "China",
+      price: 4.99,
+      currency: "$",
+      source: "Alibaba"
+    }
+  ];
+}
 
 exports.handler = async (event, context) => {
   try {
-    // Demo ürünler (gerçek scraping yerine)
+    const alibabaData = await scrapeAlibaba();
+    
+    // Demo ürünler + Alibaba
     const products = [
+      ...alibabaData,
       {
         id: 1,
         name: "Premium Dark Chocolate Praline",
@@ -14,11 +64,9 @@ exports.handler = async (event, context) => {
         country: "Turkey",
         price: 12.99,
         currency: "$",
-        weight: "250g",
         features: "Organik, Vegan",
-        allergens: "Yer Fistığı",
         added_date: new Date().toISOString(),
-        source: "Amazon"
+        source: "Amazon TR"
       },
       {
         id: 2,
@@ -28,52 +76,20 @@ exports.handler = async (event, context) => {
         country: "Belgium",
         price: 24.99,
         currency: "$",
-        weight: "200g",
-        features: "Fair Trade, Glutensiz",
-        allergens: "Süt",
+        features: "Fair Trade",
         added_date: new Date(Date.now() - 86400000).toISOString(),
-        source: "Amazon UK"
+        source: "Amazon EU"
       },
       {
         id: 3,
-        name: "Couverture Dark 70%",
+        name: "Lindt Lindor Truffles",
         brand: "Lindt",
-        category: "Couverture",
+        category: "Bonbon",
         country: "Switzerland",
-        price: 8.50,
+        price: 9.99,
         currency: "$",
-        weight: "500g",
-        features: "Endüstriyel",
-        allergens: "Yer Fistığı",
+        features: "Premium",
         added_date: new Date(Date.now() - 172800000).toISOString(),
-        source: "Alibaba"
-      },
-      {
-        id: 4,
-        name: "Solid Chocolate Bar Milk",
-        brand: "Cadbury",
-        category: "Solid Çikolata",
-        country: "UK",
-        price: 2.99,
-        currency: "$",
-        weight: "100g",
-        features: "Sütlü Çikolata",
-        allergens: "Süt, Yer Fistığı",
-        added_date: new Date(Date.now() - 259200000).toISOString(),
-        source: "Amazon"
-      },
-      {
-        id: 5,
-        name: "Chocolate Chips Premium",
-        brand: "Ghirardelli",
-        category: "Çikolata Pulu",
-        country: "USA",
-        price: 5.99,
-        currency: "$",
-        weight: "340g",
-        features: "Yüksek Kalite",
-        allergens: "Süt",
-        added_date: new Date(Date.now() - 345600000).toISOString(),
         source: "Amazon US"
       }
     ];
@@ -82,7 +98,8 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
         success: true,

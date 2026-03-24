@@ -6,6 +6,11 @@
 [functions]
   node_bundler = "esbuild"
 
+# Scheduled function - her hafta Pazartesi 12:00 UTC'de çalışsın
+[[scheduled_functions]]
+  function = "scrape"
+  cron = "0 12 * * 1"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
