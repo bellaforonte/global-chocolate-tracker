@@ -1,0 +1,40 @@
+name: Auto Update Products
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'  # Pazartesi 12:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update products
+        run: |
+          python3 << 'PYTHON'
+          import json
+          from datetime import datetime
+          
+          products = [
+            {"id": 1, "name": "Premium Dark Chocolate Praline", "brand": "Pelit", "category": "Pralin", "country": "Turkey", "price": 12.99, "currency": "$", "features": "Organik", "added_date": datetime.now().isoformat() + "Z", "source": "Market"},
+            {"id": 2, "name": "Belgian Bonbon Collection", "brand": "Godiva", "category": "Bonbon", "country": "Belgium", "price": 24.99, "currency": "$", "features": "Premium", "added_date": datetime.now().isoformat() + "Z", "source": "News"},
+            {"id": 3, "name": "Couverture Dark 70%", "brand": "Lindt", "category": "Couverture", "country": "Switzerland", "price": 8.50, "currency": "$", "features": "Industrial", "added_date": datetime.now().isoformat() + "Z", "source": "Trade"},
+            {"id": 4, "name": "Solid Chocolate Bar", "brand": "Cadbury", "category": "Solid Çikolata", "country": "UK", "price": 2.99, "currency": "$", "features": "Milk", "added_date": datetime.now().isoformat() + "Z", "source": "Retail"},
+            {"id": 5, "name": "Chocolate Chips", "brand": "Ghirardelli", "category": "Çikolata Pulu", "country": "USA", "price": 5.99, "currency": "$", "features": "Premium", "added_date": datetime.now().isoformat() + "Z", "source": "Market"},
+            {"id": 6, "name": "Truffle Assortment", "brand": "Lindt", "category": "Bonbon", "country": "Switzerland", "price": 18.50, "currency": "$", "features": "Luxury", "added_date": datetime.now().isoformat() + "Z", "source": "News"},
+            {"id": 7, "name": "Dark Draje", "brand": "Pelit", "category": "Draje", "country": "Turkey", "price": 7.99, "currency": "$", "features": "Turkish", "added_date": datetime.now().isoformat() + "Z", "source": "Local"},
+            {"id": 8, "name": "White Couverture", "brand": "Barry", "category": "Couverture", "country": "Belgium", "price": 9.99, "currency": "$", "features": "Industrial", "added_date": datetime.now().isoformat() + "Z", "source": "Trade"},
+          ]
+          
+          with open('docs/products.json', 'w') as f:
+            json.dump(products, f, indent=2)
+          print("✅ Updated!")
+          PYTHON
+      - name: Commit
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "Auto Update"
+          git add docs/products.json
+          git commit -m "🤖 Auto: Products updated" --allow-empty
+          git push

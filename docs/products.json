@@ -7,10 +7,9 @@
     "country": "Turkey",
     "price": 12.99,
     "currency": "$",
-    "weight": "250g",
     "features": "Organik, Vegan",
-    "added_date": "2026-03-24T15:00:00Z",
-    "source": "Amazon"
+    "added_date": "2026-03-24T00:00:00Z",
+    "source": "Market Research"
   },
   {
     "id": 2,
@@ -20,10 +19,9 @@
     "country": "Belgium",
     "price": 24.99,
     "currency": "$",
-    "weight": "200g",
-    "features": "Fair Trade, Glutensiz",
-    "added_date": "2026-03-23T10:00:00Z",
-    "source": "Amazon UK"
+    "features": "Fair Trade, Premium",
+    "added_date": "2026-03-23T00:00:00Z",
+    "source": "Industry News"
   },
   {
     "id": 3,
@@ -33,10 +31,9 @@
     "country": "Switzerland",
     "price": 8.50,
     "currency": "$",
-    "weight": "500g",
     "features": "Endüstriyel, Premium",
-    "added_date": "2026-03-22T14:30:00Z",
-    "source": "Alibaba"
+    "added_date": "2026-03-22T00:00:00Z",
+    "source": "Trade Magazine"
   },
   {
     "id": 4,
@@ -46,10 +43,9 @@
     "country": "UK",
     "price": 2.99,
     "currency": "$",
-    "weight": "100g",
     "features": "Sütlü Çikolata",
-    "added_date": "2026-03-21T09:00:00Z",
-    "source": "Amazon"
+    "added_date": "2026-03-21T00:00:00Z",
+    "source": "Retail Data"
   },
   {
     "id": 5,
@@ -59,10 +55,9 @@
     "country": "USA",
     "price": 5.99,
     "currency": "$",
-    "weight": "340g",
-    "features": "Yüksek Kalite, Premium",
-    "added_date": "2026-03-20T11:15:00Z",
-    "source": "Amazon US"
+    "features": "Yüksek Kalite",
+    "added_date": "2026-03-20T00:00:00Z",
+    "source": "Market Research"
   },
   {
     "id": 6,
@@ -72,10 +67,9 @@
     "country": "Switzerland",
     "price": 18.50,
     "currency": "$",
-    "weight": "180g",
-    "features": "Organik, Vegan, Fair Trade",
-    "added_date": "2026-03-19T13:45:00Z",
-    "source": "Amazon EU"
+    "features": "Organik, Premium",
+    "added_date": "2026-03-19T00:00:00Z",
+    "source": "Industry News"
   },
   {
     "id": 7,
@@ -85,10 +79,9 @@
     "country": "Turkey",
     "price": 7.99,
     "currency": "$",
-    "weight": "200g",
-    "features": "Türk Malı, Kaliteli",
-    "added_date": "2026-03-18T16:20:00Z",
-    "source": "Local"
+    "features": "Türk Malı",
+    "added_date": "2026-03-18T00:00:00Z",
+    "source": "Local Producer"
   },
   {
     "id": 8,
@@ -98,9 +91,8 @@
     "country": "Belgium",
     "price": 9.99,
     "currency": "$",
-    "weight": "500g",
-    "features": "Endüstriyel, Professional",
-    "added_date": "2026-03-17T12:00:00Z",
-    "source": "Alibaba"
+    "features": "Endüstriyel",
+    "added_date": "2026-03-17T00:00:00Z",
+    "source": "Bulk Supplier"
   }
 ]
