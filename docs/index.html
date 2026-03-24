@@ -13,10 +13,11 @@
     button { padding: 12px 24px; background: #8B7355; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin: 5px; }
     button:hover { background: #6d5a42; }
     button:disabled { background: #ccc; cursor: not-allowed; }
-    .message { padding: 10px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; }
+    .message { padding: 10px; margin: 10px 0; border-radius: 6px; text-align: center; display: none; font-weight: bold; }
     .message.show { display: block; }
-    .success { background: #d4edda; color: #155724; }
-    .error { background: #f8d7da; color: #721c24; }
+    .message.success { background: #d4edda; color: #155724; }
+    .message.loading { background: #fff3cd; color: #856404; }
+    .message.error { background: #f8d7da; color: #721c24; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
     .stat { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
     .stat-value { font-size: 24px; font-weight: bold; color: #8B7355; }
@@ -90,63 +91,34 @@
   <script>
     let products = [];
     
-    // Supabase URL ve Key (DEMO - gerçekte env'den gelir)
-    const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co'
-    const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY'
-    
     async function updateNow() {
       const btn = document.getElementById('update-btn')
       const msg = document.getElementById('message')
       
       btn.disabled = true
-      msg.className = 'message show success'
+      msg.className = 'message show loading'
       msg.textContent = '⏳ Tüm kaynaklardan veri çekiliyor... (Amazon, Alibaba, News, vb)'
       
       try {
-        // Call Supabase Edge Function
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/scrape-products`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
+        // Fetch fresh data
+        const response = await fetch('./products.json?t=' + Date.now())
         const data = await response.json()
         
-        if (data.success) {
-          products = data.products
+        if (Array.isArray(data)) {
+          products = data
           renderTable(products)
           updateStats()
           msg.className = 'message show success'
-          msg.textContent = `✅ ${data.count} ürün bulundu! Kaynaklar: ${data.sources.join(', ')}`
-        } else {
-          throw new Error(data.error)
+          const sources = [...new Set(data.map(p => p.source))].join(', ')
+          msg.textContent = `✅ ${data.length} ürün bulundu! Kaynaklar: ${sources}`
         }
       } catch (e) {
         msg.className = 'message show error'
-        msg.textContent = `❌ Hata: ${e.message}. Fallback veri gösteriliyor.`
-        // Show fallback data
-        products = getFallbackProducts()
-        renderTable(products)
-        updateStats()
+        msg.textContent = `❌ Hata: ${e.message}`
       }
       
       btn.disabled = false
       setTimeout(() => { msg.className = 'message' }, 5000)
-    }
-    
-    function getFallbackProducts() {
-      return [
-        {id:1,name:"Lindt Lindor Dark Chocolate",brand:"Lindt",category:"Bonbon",country:"Switzerland",price:8.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:2,name:"Godiva Dark Pralines",brand:"Godiva",category:"Pralin",country:"Belgium",price:22.50,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:3,name:"Barry Callebaut Couverture",brand:"Barry",category:"Couverture",country:"Belgium",price:11.50,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:4,name:"Pelit Premium Praline",brand:"Pelit",category:"Pralin",country:"Turkey",price:12.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:5,name:"Ferrero Rocher Hazelnut",brand:"Ferrero",category:"Pralin",country:"Italy",price:6.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:6,name:"Ghirardelli Dark Squares",brand:"Ghirardelli",category:"Solid Çikolata",country:"USA",price:4.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:7,name:"Green & Black's Organic",brand:"Green & Black's",category:"Solid Çikolata",country:"UK",price:2.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()},
-        {id:8,name:"Ritter Sport Premium",brand:"Ritter Sport",category:"Solid Çikolata",country:"Germany",price:1.99,currency:"$",source:"Fallback Data",added_date:new Date().toISOString()}
-      ]
     }
     
     function renderTable(arr) {
@@ -157,7 +129,7 @@
           <td>${p.brand}</td>
           <td><span class="badge">${p.category}</span></td>
           <td>${p.country}</td>
-          <td><strong>${p.currency}${p.price.toFixed(2)}</strong></td>
+          <td><strong>${p.currency}${p.price || '0'}</strong></td>
           <td><span class="source-tag">${p.source}</span></td>
           <td>${new Date(p.added_date).toLocaleDateString('tr-TR')}</td>
         </tr>
@@ -191,10 +163,16 @@
         cats.map(c => `<option value="${c}">${c}</option>`).join('')
     }
     
-    // Load fallback data on startup
-    products = getFallbackProducts()
-    renderTable(products)
-    updateStats()
+    // Load on startup
+    window.addEventListener('load', () => {
+      fetch('./products.json')
+        .then(r => r.json())
+        .then(data => {
+          products = data
+          renderTable(products)
+          updateStats()
+        })
+    })
   </script>
 </body>
 </html>
