@@ -1,6 +1,11 @@
 {
-  "buildCommand": "echo 'Static HTML - no build'",
+  "buildCommand": "echo 'Static site with serverless functions'",
   "outputDirectory": "public",
   "framework": null,
-  "functions": {}
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 60
+    }
+  }
 }
