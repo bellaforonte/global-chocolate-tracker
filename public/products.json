@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "name": "Premium Dark Chocolate Praline",
+    "brand": "Pelit",
+    "category": "Pralin",
+    "country": "Turkey",
+    "price": 12.99,
+    "currency": "$",
+    "features": "Organik, Vegan",
+    "added_date": "2026-03-24T12:00:00Z"
+  }
+]
