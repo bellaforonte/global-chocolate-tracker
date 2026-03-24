@@ -1,9 +1,1 @@
 node_modules/
-*.pyc
-__pycache__/
-*.db
-*.sqlite
-.env.local
-.next/
-dist/
-.DS_Store
